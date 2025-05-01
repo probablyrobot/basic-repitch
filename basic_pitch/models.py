@@ -168,7 +168,7 @@ def get_cqt(inputs: tf.Tensor, n_harmonics: int, use_batchnorm: bool) -> tf.Tens
         bins_per_octave=12 * CONTOURS_BINS_PER_SEMITONE,
     )(x)
     x = signal.NormalizedLog()(x)
-    x = tf.expand_dims(x, -1)
+    x = tfkl.Lambda(lambda x: tf.expand_dims(x, -1))(x)
     if use_batchnorm:
         x = tfkl.BatchNormalization()(x)
     return x

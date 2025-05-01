@@ -25,6 +25,7 @@ from typing import Any, ClassVar, TextIO
 import apache_beam as beam
 import mirdata
 
+# Import our patched mirdata
 from basic_pitch.data import commandline, pipeline
 
 

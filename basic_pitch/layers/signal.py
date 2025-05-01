@@ -161,9 +161,12 @@ class NormalizedLog(tf.keras.layers.Layer):
     This layer adds 1e-10 to all values as a way to avoid NaN math.
     """
 
-    def build(self, input_shape: tf.Tensor) -> None:
+    def build(self, input_shape: tf.TensorShape | tuple) -> None:
         self.squeeze_batch = lambda batch: batch
-        rank = input_shape.rank
+        if isinstance(input_shape, tuple):
+            rank = len(input_shape)
+        else:
+            rank = input_shape.rank
         if rank == 4:
             assert input_shape[1] == 1, "If the rank is 4, the second dimension must be length 1"
             self.squeeze_batch = lambda batch: tf.squeeze(batch, axis=1)

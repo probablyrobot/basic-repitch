@@ -34,7 +34,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
+python = ">=3.10,<3.12"
 librosa = "^0.10.1"
 mir_eval = "^0.7"
 numpy = "^1.26.4"
@@ -53,11 +53,10 @@ priority = "supplemental"
 
 [tool.poetry.group.data.dependencies]
 apache_beam = "*"
-mirdata = { version = "*", python = "<3.12" }
+mirdata = "^0.3.9"
 smart_open = "*"
 sox = "*"
 ffmpeg-python = "*"
-jams = { version = "^0.3.4", python = "<3.12" }  # Restrict jams to Python <3.12 due to imp module dependency
 
 [tool.poetry.group.test.dependencies]
 coverage = "^7.4.3"

@@ -84,6 +84,8 @@ elif TFLITE_PRESENT:
     _default_model_type = FilenameSuffix.tflite
 elif ONNX_PRESENT:
     _default_model_type = FilenameSuffix.onnx
+else:
+    _default_model_type = FilenameSuffix.tf  # Default to TF model type if no framework is present
 
 
 def build_icassp_2022_model_path(suffix: FilenameSuffix) -> pathlib.Path:

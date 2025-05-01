@@ -1,0 +1,13 @@
+{
+    "version": "1.1.0",
+    "tracks": {
+        "00_BN1-129-Eb_comp": {
+            "audio_mic_path": "audio_mono-mic/00_BN1-129-Eb_comp_mic.wav",
+            "jams_path": "annotation/00_BN1-129-Eb_comp.jams"
+        },
+        "00_BN1-147-Gb_comp": {
+            "audio_mic_path": "audio_mono-mic/00_BN1-147-Gb_comp_mic.wav",
+            "jams_path": "annotation/00_BN1-147-Gb_comp.jams"
+        }
+    }
+}
