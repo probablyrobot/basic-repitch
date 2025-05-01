@@ -7,7 +7,7 @@
 ![Supported Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-green)
 
 
-Basic Pitch is a Python library for Automatic Music Transcription (AMT), using lightweight neural network developed by [Spotify's Audio Intelligence Lab](https://research.atspotify.com/audio-intelligence/). It's small, easy-to-use, `pip install`-able and `npm install`-able via its [sibling repo](https://github.com/spotify/basic-pitch-ts).
+Basic RePitch is a Python library for Automatic Music Transcription (AMT) based on Basic-Pitch, using lightweight neural network developed by [Spotify's Audio Intelligence Lab](https://research.atspotify.com/audio-intelligence/). It's small, easy-to-use, `pip install`-able and `npm install`-able via its [sibling repo](https://github.com/spotify/basic-pitch-ts). It supports TensorFlow versions 2.19, Python 3.12 and higher.
 
 Basic Pitch may be simple, but it's is far from "basic"! `basic-pitch` is efficient and easy to use, and its multipitch support, its ability to generalize across instruments, and its note accuracy competes with much larger and more resource-hungry AMT systems.
 
@@ -44,7 +44,7 @@ To update Basic Pitch to the latest version, add `--upgrade` to the above comman
 
 #### Compatible Environments:
 - MacOS, Windows and Ubuntu operating systems
-- Python versions 3.7, 3.8, 3.9, 3.10, 3.11, 3.12
+- Python versions 3.12
 
 ### Model Runtime
 
