@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2024 Spotify AB
 #
@@ -15,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
-
 from enum import Enum
+
+import numpy as np
 
 FFT_HOP = 256
 N_FFT = 8 * FFT_HOP

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2024 Spotify AB
 #
@@ -16,10 +15,9 @@
 # limitations under the License.
 
 import argparse
-import os
 import logging
-from datetime import datetime, timezone
-from typing import List
+import os
+from datetime import UTC, datetime
 
 import numpy as np
 import tensorflow as tf
@@ -42,7 +40,7 @@ def main(
     steps_per_epoch: int,
     validation_steps: int,
     size_evaluation_callback_datasets: int,
-    datasets_to_use: List[str],
+    datasets_to_use: list[str],
     dataset_sampling_frequency: np.ndarray,
     no_sonify: bool,
     no_contours: bool,
@@ -121,7 +119,7 @@ def main(
         dataset_sampling_frequency=dataset_sampling_frequency,
     )
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M")
     tensorboard_log_dir = os.path.join(output, timestamp, "tensorboard")
     callbacks = [
         tf.keras.callbacks.TensorBoard(log_dir=tensorboard_log_dir, histogram_freq=1),

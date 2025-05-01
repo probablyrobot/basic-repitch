@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2022 Spotify AB
 #
@@ -20,11 +19,11 @@
 # The above code is released under an MIT license.
 
 import warnings
-import tensorflow as tf
-import numpy as np
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any
 
+import numpy as np
 import scipy.signal
+import tensorflow as tf
 
 
 def create_lowpass_filter(
@@ -67,12 +66,12 @@ def next_power_of_2(A: int) -> int:
 
 
 def early_downsample(
-    sr: Union[float, int],
+    sr: float | int,
     hop_length: int,
     n_octaves: int,
     nyquist_hz: float,
     filter_cutoff_hz: float,
-) -> Tuple[Union[float, int], int, int]:
+) -> tuple[float | int, int, int]:
     """Return new sampling rate and hop length after early downsampling"""
     downsample_count = early_downsample_count(nyquist_hz, filter_cutoff_hz, hop_length, n_octaves)
     downsample_factor = 2 ** (downsample_count)
@@ -97,13 +96,13 @@ def early_downsample_count(nyquist_hz: float, filter_cutoff_hz: float, hop_lengt
 
 
 def get_early_downsample_params(
-    sr: Union[float, int],
+    sr: float | int,
     hop_length: int,
     fmax_t: float,
     Q: float,
     n_octaves: int,
     dtype: tf.dtypes.DType,
-) -> Tuple[Union[float, int], int, float, np.array, bool]:
+) -> tuple[float | int, int, float, np.array, bool]:
     """Compute downsampling parameters used for early downsampling"""
 
     window_bandwidth = 1.5  # for hann window
@@ -124,7 +123,7 @@ def get_early_downsample_params(
     return sr, hop_length, downsample_factor, early_downsample_filter, earlydownsample
 
 
-def get_window_dispatch(window: Union[str, Tuple[str, float]], N: int, fftbins: bool = True) -> np.array:
+def get_window_dispatch(window: str | tuple[str, float], N: int, fftbins: bool = True) -> np.array:
     if isinstance(window, str):
         return scipy.signal.get_window(window, N, fftbins=fftbins)
     elif isinstance(window, tuple):
@@ -148,9 +147,9 @@ def create_cqt_kernels(
     bins_per_octave: int = 12,
     norm: int = 1,
     window: str = "hann",
-    fmax: Optional[float] = None,
+    fmax: float | None = None,
     topbin_check: bool = True,
-) -> Tuple[np.array, int, np.array, np.array]:
+) -> tuple[np.array, int, np.array, np.array]:
     """
     Automatically create CQT kernels in time domain
     """
@@ -170,9 +169,7 @@ def create_cqt_kernels(
         freqs = fmin * 2.0 ** (np.r_[0:n_bins] / float(bins_per_octave))
 
     if np.max(freqs) > fs / 2 and topbin_check is True:
-        raise ValueError(
-            "The top bin {}Hz has exceeded the Nyquist frequency, please reduce the n_bins".format(np.max(freqs))
-        )
+        raise ValueError(f"The top bin {np.max(freqs)}Hz has exceeded the Nyquist frequency, please reduce the n_bins")
 
     tempKernel = np.zeros((int(n_bins), int(fftLen)), dtype=np.complex64)
 
@@ -207,8 +204,8 @@ def get_cqt_complex(
 ) -> tf.Tensor:
     """Multiplying the STFT result with the cqt_kernel, check out the 1992 CQT paper [1]
     for how to multiple the STFT result with the CQT kernel
-    [2] Brown, Judith C.C. and Miller Puckette. “An efficient algorithm for the calculation of
-    a constant Q transform.” (1992)."""
+    [2] Brown, Judith C.C. and Miller Puckette. "An efficient algorithm for the calculation of
+    a constant Q transform." (1992)."""
 
     try:
         x = padding(x)  # When center is True, we need padding at the beginning and ending
@@ -274,12 +271,12 @@ class ReflectionPad1D(tf.keras.layers.Layer):
     Replica of Torch's nn.ReflectionPad1D in TF.
     """
 
-    def __init__(self, padding: Union[int, Tuple[int]] = 1, **kwargs: Any):
+    def __init__(self, padding: int | tuple[int] = 1, **kwargs: Any):
         self.padding = padding
         self.input_spec = [tf.keras.layers.InputSpec(ndim=3)]
-        super(ReflectionPad1D, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
-    def compute_output_shape(self, s: List[int]) -> Tuple[int, int, int]:
+    def compute_output_shape(self, s: list[int]) -> tuple[int, int, int]:
         return (s[0], s[1], s[2] + 2 * self.padding if isinstance(self.padding, int) else self.padding[0])
 
     def call(self, x: tf.Tensor) -> tf.Tensor:
@@ -291,13 +288,13 @@ class ConstantPad1D(tf.keras.layers.Layer):
     Replica of Torch's nn.ConstantPad1D in TF.
     """
 
-    def __init__(self, padding: Union[int, Tuple[int]] = 1, value: int = 0, **kwargs: Any):
+    def __init__(self, padding: int | tuple[int] = 1, value: int = 0, **kwargs: Any):
         self.padding = padding
         self.value = value
         self.input_spec = [tf.keras.layers.InputSpec(ndim=3)]
-        super(ConstantPad1D, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
-    def compute_output_shape(self, s: List[int]) -> Tuple[int, int, int]:
+    def compute_output_shape(self, s: list[int]) -> tuple[int, int, int]:
         return (s[0], s[1], s[2] + 2 * self.padding if isinstance(self.padding, int) else self.padding[0])
 
     def call(self, x: tf.Tensor) -> tf.Tensor:
@@ -367,7 +364,7 @@ def pad_center(data: np.ndarray, size: int, axis: int = -1, **kwargs: Any) -> np
     lengths[axis] = (lpad, int(size - n - lpad))
 
     if lpad < 0:
-        raise ValueError(("Target size ({:d}) must be at least input size ({:d})").format(size, n))
+        raise ValueError(f"Target size ({size:d}) must be at least input size ({n:d})")
 
     return np.pad(data, lengths, **kwargs)
 
@@ -391,9 +388,9 @@ class CQT2010v2(tf.keras.layers.Layer):
     to the next lower octave.
     The kernel creation process is still same as the 1992 algorithm. Therefore, we can reuse the
     code from the 1992 alogrithm [2]
-    [1] Schörkhuber, Christian. “CONSTANT-Q TRANSFORM TOOLBOX FOR MUSIC PROCESSING.” (2010).
-    [2] Brown, Judith C.C. and Miller Puckette. “An efficient algorithm for the calculation of a
-    constant Q transform.” (1992).
+    [1] Schörkhuber, Christian. "CONSTANT-Q TRANSFORM TOOLBOX FOR MUSIC PROCESSING." (2010).
+    [2] Brown, Judith C.C. and Miller Puckette. "An efficient algorithm for the calculation of a
+    constant Q transform." (1992).
     Early downsampling factor is to downsample the input audio to reduce the CQT kernel size.
     The result with and without early downsampling are more or less the same except in the very low
     frequency region where freq < 40Hz.
@@ -457,7 +454,7 @@ class CQT2010v2(tf.keras.layers.Layer):
         sr: int = 22050,
         hop_length: int = 512,
         fmin: float = 32.70,
-        fmax: Optional[float] = None,
+        fmax: float | None = None,
         n_bins: int = 84,
         filter_scale: int = 1,
         bins_per_octave: int = 12,
@@ -472,7 +469,7 @@ class CQT2010v2(tf.keras.layers.Layer):
     ):
         super().__init__()
 
-        self.sample_rate: Union[float, int] = sr
+        self.sample_rate: float | int = sr
         self.hop_length = hop_length
         self.fmin = fmin
         self.fmax = fmax
@@ -536,9 +533,7 @@ class CQT2010v2(tf.keras.layers.Layer):
 
         self.fmin_t = fmax_t / 2 ** (1 - 1 / self.bins_per_octave)  # Adjusting the top minium bins
         if fmax_t > self.sample_rate / 2:
-            raise ValueError(
-                "The top bin {}Hz has exceeded the Nyquist frequency, please reduce the n_bins".format(fmax_t)
-            )
+            raise ValueError(f"The top bin {fmax_t}Hz has exceeded the Nyquist frequency, please reduce the n_bins")
 
         if self.earlydownsample is True:  # Do early downsampling if this argument is True
             (

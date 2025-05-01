@@ -1,4 +1,4 @@
-FROM apache/beam_python3.10_sdk:2.51.0
+FROM apache/beam_python3.12_sdk:2.51.0
 
 RUN --mount=type=cache,target=/var/cache/apt \
   apt-get update \
@@ -15,5 +15,4 @@ WORKDIR basic-pitch
 RUN --mount=type=cache,target=/root/.cache \
   pip3 install --upgrade pip && \
   pip3 install --upgrade setuptools wheel && \
-  pip3 install -e '.[train]' 
-
+  pip3 install -e '.[train]'

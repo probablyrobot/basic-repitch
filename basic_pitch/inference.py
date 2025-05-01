@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2022 Spotify AB
 #
@@ -21,8 +20,8 @@ import json
 import logging
 import os
 import pathlib
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, cast
-
+from collections.abc import Iterable, Sequence
+from typing import Any, cast
 
 from basic_pitch import CT_PRESENT, ICASSP_2022_MODEL_PATH, ONNX_PRESENT, TF_PRESENT, TFLITE_PRESENT
 
@@ -47,39 +46,40 @@ try:
 except ImportError:
     pass
 
+import librosa
 import numpy as np
 import numpy.typing as npt
-import librosa
 import pretty_midi
 
-from basic_pitch.constants import (
-    AUDIO_SAMPLE_RATE,
-    AUDIO_N_SAMPLES,
-    ANNOTATIONS_FPS,
-    FFT_HOP,
-)
+import basic_pitch.note_creation as infer
 from basic_pitch.commandline_printing import (
+    failed_to_save,
+    file_saved_confirmation,
     generating_file_message,
     no_tf_warnings,
-    file_saved_confirmation,
-    failed_to_save,
 )
-import basic_pitch.note_creation as infer
+from basic_pitch.constants import (
+    ANNOTATIONS_FPS,
+    AUDIO_N_SAMPLES,
+    AUDIO_SAMPLE_RATE,
+    FFT_HOP,
+)
+
+
+class ModelTypes:
+    TENSORFLOW = "tensorflow"
+    TFLITE = "tflite"
+    ONNX = "onnx"
+    COREML = "coreml"
 
 
 class Model:
-    class MODEL_TYPES(enum.Enum):
-        TENSORFLOW = enum.auto()
-        COREML = enum.auto()
-        TFLITE = enum.auto()
-        ONNX = enum.auto()
-
-    def __init__(self, model_path: Union[pathlib.Path, str]):
+    def __init__(self, model_path: pathlib.Path | str):
         present = []
         if TF_PRESENT:
             present.append("TensorFlow")
             try:
-                self.model_type = Model.MODEL_TYPES.TENSORFLOW
+                self.model_type = ModelTypes.TENSORFLOW
                 self.model = tf.saved_model.load(str(model_path))
                 return
             except Exception as e:
@@ -95,7 +95,7 @@ class Model:
         if CT_PRESENT:
             present.append("CoreML")
             try:
-                self.model_type = Model.MODEL_TYPES.COREML
+                self.model_type = ModelTypes.COREML
                 self.model = ct.models.MLModel(str(model_path), compute_units=ct.ComputeUnit.CPU_ONLY)
                 return
             except Exception as e:
@@ -111,7 +111,7 @@ class Model:
         if TFLITE_PRESENT or TF_PRESENT:
             present.append("TensorFlowLite")
             try:
-                self.model_type = Model.MODEL_TYPES.TFLITE
+                self.model_type = ModelTypes.TFLITE
                 self.interpreter = tflite.Interpreter(str(model_path))
                 self.model = self.interpreter.get_signature_runner()
                 return
@@ -128,7 +128,7 @@ class Model:
         if ONNX_PRESENT:
             present.append("ONNX")
             try:
-                self.model_type = Model.MODEL_TYPES.ONNX
+                self.model_type = ModelTypes.ONNX
                 providers = ["CPUExecutionProvider"]
                 if "CUDAExecutionProvider" in ort.get_available_providers():
                     providers.insert(0, "CUDAExecutionProvider")
@@ -152,22 +152,21 @@ class Model:
             f"{present} is installed."
         )
 
-    def predict(self, x: npt.NDArray[np.float32]) -> Dict[str, npt.NDArray[np.float32]]:
-        if self.model_type == Model.MODEL_TYPES.TENSORFLOW:
+    def predict(self, x: npt.NDArray[np.float32]) -> dict[str, npt.NDArray[np.float32]]:
+        if self.model_type == ModelTypes.TENSORFLOW:
             return {k: v.numpy() for k, v in cast(tf.keras.Model, self.model(x)).items()}
-        elif self.model_type == Model.MODEL_TYPES.COREML:
+        elif self.model_type == ModelTypes.COREML:
             result = cast(ct.models.MLModel, self.model).predict({"input_2": x})
             return {
                 "note": result["Identity_1"],
                 "onset": result["Identity_2"],
                 "contour": result["Identity"],
             }
-        elif self.model_type == Model.MODEL_TYPES.TFLITE:
+        elif self.model_type == ModelTypes.TFLITE:
             return self.model(input_2=x)  # type: ignore
-        elif self.model_type == Model.MODEL_TYPES.ONNX:
-            return {
-                k: v
-                for k, v in zip(
+        elif self.model_type == ModelTypes.ONNX:
+            return dict(
+                zip(
                     ["note", "onset", "contour"],
                     cast(ort.InferenceSession, self.model).run(
                         [
@@ -177,13 +176,14 @@ class Model:
                         ],
                         {"serving_default_input_2:0": x},
                     ),
+                    strict=False,
                 )
-            }
+            )
 
 
 def window_audio_file(
     audio_original: npt.NDArray[np.float32], hop_size: int
-) -> Iterable[Tuple[npt.NDArray[np.float32], Dict[str, float]]]:
+) -> Iterable[tuple[npt.NDArray[np.float32], dict[str, float]]]:
     """
     Pad appropriately an audio file, and return as
     windowed signal, with window length = AUDIO_N_SAMPLES
@@ -210,8 +210,8 @@ def window_audio_file(
 
 
 def get_audio_input(
-    audio_path: Union[pathlib.Path, str], overlap_len: int, hop_size: int
-) -> Iterable[Tuple[npt.NDArray[np.float32], Dict[str, float], int]]:
+    audio_path: pathlib.Path | str, overlap_len: int, hop_size: int
+) -> Iterable[tuple[npt.NDArray[np.float32], dict[str, float], int]]:
     """
     Read wave file (as mono), pad appropriately, and return as
     windowed signal, with window length = AUDIO_N_SAMPLES
@@ -264,10 +264,10 @@ def unwrap_output(
 
 
 def run_inference(
-    audio_path: Union[pathlib.Path, str],
-    model_or_model_path: Union[Model, pathlib.Path, str],
-    debug_file: Optional[pathlib.Path] = None,
-) -> Dict[str, np.array]:
+    audio_path: pathlib.Path | str,
+    model_or_model_path: Model | pathlib.Path | str,
+    debug_file: pathlib.Path | None = None,
+) -> dict[str, np.array]:
     """Run the model on the input audio path.
 
     Args:
@@ -288,13 +288,14 @@ def run_inference(
     overlap_len = n_overlapping_frames * FFT_HOP
     hop_size = AUDIO_N_SAMPLES - overlap_len
 
-    output: Dict[str, Any] = {"note": [], "onset": [], "contour": []}
-    for audio_windowed, _, audio_original_length in get_audio_input(audio_path, overlap_len, hop_size):
+    output: dict[str, Any] = {"note": [], "onset": [], "contour": []}
+    audio_chunks = list(get_audio_input(audio_path, overlap_len, hop_size))
+    for audio_windowed, _, _ in audio_chunks:
         for k, v in model.predict(audio_windowed).items():
             output[k].append(v)
 
     unwrapped_output = {
-        k: unwrap_output(np.concatenate(output[k]), audio_original_length, n_overlapping_frames) for k in output
+        k: unwrap_output(np.concatenate(output[k]), audio_chunks[-1][2], n_overlapping_frames) for k in output
     }
 
     if debug_file:
@@ -302,7 +303,7 @@ def run_inference(
             json.dump(
                 {
                     "audio_windowed": audio_windowed.numpy().tolist(),
-                    "audio_original_length": audio_original_length,
+                    "audio_original_length": audio_chunks[-1][2],
                     "hop_size_samples": hop_size,
                     "overlap_length_samples": overlap_len,
                     "unwrapped_output": {k: v.tolist() for k, v in unwrapped_output.items()},
@@ -320,7 +321,7 @@ class OutputExtensions(enum.Enum):
     NOTE_EVENTS = "csv"
 
 
-def verify_input_path(audio_path: Union[pathlib.Path, str]) -> None:
+def verify_input_path(audio_path: pathlib.Path | str) -> None:
     """Verify that an input path is valid and can be processed
 
     Args:
@@ -336,7 +337,7 @@ def verify_input_path(audio_path: Union[pathlib.Path, str]) -> None:
         raise ValueError(f"🚨 {audio_path} does not exist.")
 
 
-def verify_output_dir(output_dir: Union[pathlib.Path, str]) -> None:
+def verify_output_dir(output_dir: pathlib.Path | str) -> None:
     """Verify that an output directory is valid and can be processed
 
     Args:
@@ -353,8 +354,8 @@ def verify_output_dir(output_dir: Union[pathlib.Path, str]) -> None:
 
 
 def build_output_path(
-    audio_path: Union[pathlib.Path, str],
-    output_directory: Union[pathlib.Path, str],
+    audio_path: pathlib.Path | str,
+    output_directory: pathlib.Path | str,
     output_type: OutputExtensions,
 ) -> pathlib.Path:
     """Create an output path and make sure it doesn't already exist.
@@ -382,16 +383,16 @@ def build_output_path(
     generating_file_message(output_type.name)
 
     if output_path.exists():
-        raise IOError(
-            f"  🚨 {str(output_path)} already exists and would be overwritten. Skipping output files for {audio_path}."
+        raise OSError(
+            f"  🚨 {output_path!s} already exists and would be overwritten. Skipping output files for {audio_path}."
         )
 
     return output_path
 
 
 def save_note_events(
-    note_events: List[Tuple[float, float, int, float, Optional[List[int]]]],
-    save_path: Union[pathlib.Path, str],
+    note_events: list[tuple[float, float, int, float, list[int] | None]],
+    save_path: pathlib.Path | str,
 ) -> None:
     """Save note events to file
 
@@ -412,21 +413,21 @@ def save_note_events(
 
 
 def predict(
-    audio_path: Union[pathlib.Path, str],
-    model_or_model_path: Union[Model, pathlib.Path, str] = ICASSP_2022_MODEL_PATH,
+    audio_path: pathlib.Path | str,
+    model_or_model_path: Model | pathlib.Path | str = ICASSP_2022_MODEL_PATH,
     onset_threshold: float = 0.5,
     frame_threshold: float = 0.3,
     minimum_note_length: float = 127.70,
-    minimum_frequency: Optional[float] = None,
-    maximum_frequency: Optional[float] = None,
+    minimum_frequency: float | None = None,
+    maximum_frequency: float | None = None,
     multiple_pitch_bends: bool = False,
     melodia_trick: bool = True,
-    debug_file: Optional[pathlib.Path] = None,
+    debug_file: pathlib.Path | None = None,
     midi_tempo: float = 120,
-) -> Tuple[
-    Dict[str, np.array],
+) -> tuple[
+    dict[str, np.array],
     pretty_midi.PrettyMIDI,
-    List[Tuple[float, float, int, float, Optional[List[int]]]],
+    list[tuple[float, float, int, float, list[int] | None]],
 ]:
     """Run a single prediction.
 
@@ -490,21 +491,21 @@ def predict(
 
 
 def predict_and_save(
-    audio_path_list: Sequence[Union[pathlib.Path, str]],
-    output_directory: Union[pathlib.Path, str],
+    audio_path_list: Sequence[pathlib.Path | str],
+    output_directory: pathlib.Path | str,
     save_midi: bool,
     sonify_midi: bool,
     save_model_outputs: bool,
     save_notes: bool,
-    model_or_model_path: Union[Model, str, pathlib.Path],
+    model_or_model_path: Model | str | pathlib.Path,
     onset_threshold: float = 0.5,
     frame_threshold: float = 0.3,
     minimum_note_length: float = 127.70,
-    minimum_frequency: Optional[float] = None,
-    maximum_frequency: Optional[float] = None,
+    minimum_frequency: float | None = None,
+    maximum_frequency: float | None = None,
     multiple_pitch_bends: bool = False,
     melodia_trick: bool = True,
-    debug_file: Optional[pathlib.Path] = None,
+    debug_file: pathlib.Path | None = None,
     sonification_samplerate: int = 44100,
     midi_tempo: float = 120,
 ) -> None:
@@ -557,7 +558,7 @@ def predict_and_save(
             if save_midi:
                 try:
                     midi_path = build_output_path(audio_path, output_directory, OutputExtensions.MIDI)
-                except IOError as e:
+                except OSError as e:
                     raise e
                 try:
                     midi_data.write(str(midi_path))
@@ -585,3 +586,18 @@ def predict_and_save(
                     raise e
         except Exception as e:
             raise e
+
+
+def _get_model_outputs(model_outputs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    return dict(model_outputs)
+
+
+def _process_audio_chunk(
+    audio_chunk: np.ndarray,
+    model: Any,
+    model_type: str,
+    audio_original_length: int,
+) -> dict[str, np.ndarray]:
+    if len(audio_chunk) < audio_original_length:
+        audio_chunk = np.pad(audio_chunk, (0, audio_original_length - len(audio_chunk)))
+    return _get_model_outputs(model(audio_chunk))

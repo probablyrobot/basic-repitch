@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2022 Spotify AB
 #
@@ -18,7 +17,6 @@
 import enum
 import logging
 import pathlib
-
 
 try:
     import coremltools

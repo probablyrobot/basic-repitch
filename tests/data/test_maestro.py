@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2024 Spotify AB
 #
@@ -17,19 +16,16 @@
 import os
 import pathlib
 
-from typing import List
-
 import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
+from utils import create_mock_midi, create_mock_wav
 
 from basic_pitch.data.datasets.maestro import (
-    MaestroToTfExample,
     MaestroInvalidTracks,
+    MaestroToTfExample,
     create_input_data,
 )
 from basic_pitch.data.pipeline import WriteBatchToTfRecord
-
-from utils import create_mock_wav, create_mock_midi
 
 RESOURCES_PATH = pathlib.Path(__file__).parent.parent / "resources"
 MAESTRO_TEST_DATA_PATH = RESOURCES_PATH / "data" / "maestro"
@@ -51,7 +47,7 @@ def test_maestro_to_tf_example(tmp_path: pathlib.Path) -> None:
     output_dir = tmp_path / "outputs"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    input_data: List[str] = [TRAIN_TRACK_ID]
+    input_data: list[str] = [TRAIN_TRACK_ID]
     with TestPipeline() as p:
         (
             p
@@ -78,7 +74,7 @@ def test_maestro_invalid_tracks(tmp_path: pathlib.Path) -> None:
     for track_id, _ in input_data:
         create_mock_wav(mock_maestro_ext / f"{track_id.split('/')[1]}.wav", 3)
 
-    split_labels = set([e[1] for e in input_data])
+    split_labels = {e[1] for e in input_data}
     with TestPipeline() as p:
         splits = (
             p
@@ -94,7 +90,7 @@ def test_maestro_invalid_tracks(tmp_path: pathlib.Path) -> None:
             )
 
     for track_id, split in input_data:
-        with open(tmp_path / f"output_{split}.txt", "r") as fp:
+        with open(tmp_path / f"output_{split}.txt") as fp:
             assert fp.read().strip() == track_id
 
 
@@ -111,7 +107,7 @@ def test_maestro_invalid_tracks_over_15_min(tmp_path: pathlib.Path) -> None:
     create_mock_wav(mock_maestro_ext / f"{GT_15M_TRACK_ID.split('/')[1]}.wav", 16)
 
     input_data = [(GT_15M_TRACK_ID, "train")]
-    split_labels = set([e[1] for e in input_data])
+    split_labels = {e[1] for e in input_data}
     with TestPipeline() as p:
         splits = (
             p
@@ -127,7 +123,7 @@ def test_maestro_invalid_tracks_over_15_min(tmp_path: pathlib.Path) -> None:
             )
 
     for _, split in input_data:
-        with open(tmp_path / f"output_{split}.txt", "r") as fp:
+        with open(tmp_path / f"output_{split}.txt") as fp:
             assert fp.read().strip() == ""
 
 
@@ -142,4 +138,36 @@ def test_maestro_create_input_data() -> None:
 
     test_fnames = {TRAIN_TRACK_ID, VALID_TRACK_ID, TEST_TRACK_ID, GT_15M_TRACK_ID}
     splits = {d[1] for d in data if d[0].split(".")[0] in test_fnames}
-    assert splits == set(["train", "validation", "test"])
+    assert splits == {"train", "validation", "test"}
+
+
+class MaestroDataset:
+    """Mock Maestro dataset for testing."""
+
+    def __init__(self) -> None:
+        """Initialize the dataset."""
+        self.audio_dir = "audio"
+        self.annotation_dir = "annotation"
+        self.track_ids = [TRAIN_TRACK_ID, VALID_TRACK_ID, TEST_TRACK_ID]
+
+    def get_audio_path(self, track_id: str) -> str:
+        """Get audio path for a track.
+
+        Args:
+            track_id: Track ID
+
+        Returns:
+            Audio file path
+        """
+        return os.path.join(self.audio_dir, f"{track_id}.wav")
+
+    def get_annotation_path(self, track_id: str) -> str:
+        """Get annotation path for a track.
+
+        Args:
+            track_id: Track ID
+
+        Returns:
+            Annotation file path
+        """
+        return os.path.join(self.annotation_dir, f"{track_id}.midi")

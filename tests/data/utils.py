@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2024 Spotify AB
 #
@@ -16,12 +15,12 @@
 # limitations under the License.
 
 import logging
-import numpy as np
 import pathlib
-import soundfile as sf
 import wave
 
-from mido import MidiFile, MidiTrack, Message
+import numpy as np
+import soundfile as sf
+from mido import Message, MidiFile, MidiTrack
 
 
 def create_mock_wav(output_fpath: pathlib.Path, duration_min: int) -> None:
@@ -60,7 +59,7 @@ def create_mock_flac(output_fpath: pathlib.Path) -> None:
     # Save as a FLAC file
     sf.write(str(output_fpath), sin_wave, frequency, format="FLAC")
 
-    logging.info(f"Mock FLAC file {str(output_fpath)} created successfully.")
+    logging.info(f"Mock FLAC file {output_fpath!s} created successfully.")
 
 
 def create_mock_midi(output_fpath: pathlib.Path) -> None:

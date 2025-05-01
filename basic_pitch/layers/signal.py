@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2022 Spotify AB
 #
@@ -15,8 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
+
 import tensorflow as tf
+
 from basic_pitch.layers.math import log_base_b
 
 
@@ -24,13 +26,13 @@ class Stft(tf.keras.layers.Layer):
     def __init__(
         self,
         fft_length: int = 2048,
-        hop_length: Optional[int] = None,
-        window_length: Optional[int] = None,
+        hop_length: int | None = None,
+        window_length: int | None = None,
         window_fn: Callable[[int, tf.dtypes.DType], tf.Tensor] = tf.signal.hann_window,
         pad_end: bool = False,
         center: bool = True,
         pad_mode: str = "REFLECT",
-        name: Optional[str] = None,
+        name: str | None = None,
         dtype: tf.dtypes.DType = tf.float32,
     ):
         """

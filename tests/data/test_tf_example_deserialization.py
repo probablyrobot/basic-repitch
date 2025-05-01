@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2024 Spotify AB
 #
@@ -15,14 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import apache_beam as beam
-import numpy as np
 import pathlib
 import shutil
-import tensorflow as tf
 
+import apache_beam as beam
+import numpy as np
+import tensorflow as tf
 from apache_beam.testing.test_pipeline import TestPipeline
-from typing import List
+from utils import create_mock_wav
 
 from basic_pitch.constants import Split
 from basic_pitch.data.datasets.guitarset import GuitarSetToTfExample
@@ -33,8 +32,6 @@ from basic_pitch.data.tf_example_deserialization import (
     sample_datasets,
     transcription_file_generator,
 )
-
-from utils import create_mock_wav
 
 RESOURCES_PATH = pathlib.Path(__file__).parent.parent / "resources"
 TRAIN_TRACK_ID = "00_BN1-129-Eb_comp"
@@ -47,7 +44,7 @@ def create_empty_tfrecord(filepath: pathlib.Path) -> None:
         writer.write("")
 
 
-def create_tfrecord(input_data: List[str], dataset_home: str, output_dir: str) -> None:
+def create_tfrecord(input_data: list[str], dataset_home: str, output_dir: str) -> None:
     with TestPipeline() as p:
         (
             p

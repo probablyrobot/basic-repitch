@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2022 Spotify AB
 #
@@ -18,8 +17,8 @@
 import os
 import pathlib
 import threading
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator, Union
 
 TF_LOG_LEVEL_KEY = "TF_CPP_MIN_LOG_LEVEL"
 TF_LOG_LEVEL_NO_WARNINGS_VALUE = "3"
@@ -42,7 +41,7 @@ def generating_file_message(output_type: str) -> None:
     print(f"\n\n  Creating {output_type.replace('_', ' ').lower()}...")
 
 
-def file_saved_confirmation(output_type: str, save_path: Union[pathlib.Path, str]) -> None:
+def file_saved_confirmation(output_type: str, save_path: pathlib.Path | str) -> None:
     """Print a confirmation that the file was saved succesfully
 
     Args:
@@ -53,7 +52,7 @@ def file_saved_confirmation(output_type: str, save_path: Union[pathlib.Path, str
     print(f"  {OUTPUT_EMOJIS[output_type]} Saved to {save_path}")
 
 
-def failed_to_save(output_type: str, save_path: Union[pathlib.Path, str]) -> None:
+def failed_to_save(output_type: str, save_path: pathlib.Path | str) -> None:
     """Print a failure to save message
 
     Args:

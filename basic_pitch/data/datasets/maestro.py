@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2024 Spotify AB
 #
@@ -21,7 +20,7 @@ import os
 import sys
 import tempfile
 import time
-from typing import Any, Dict, List, TextIO, Tuple
+from typing import Any, ClassVar, TextIO
 
 import apache_beam as beam
 import mirdata
@@ -40,7 +39,7 @@ def read_in_chunks(file_object: TextIO, chunk_size: int = 1024) -> Any:
 
 
 class MaestroInvalidTracks(beam.DoFn):
-    DOWNLOAD_ATTRIBUTES = ["audio_path"]
+    DOWNLOAD_ATTRIBUTES: ClassVar[list[str]] = ["audio_path", "midi_path"]
 
     def __init__(self, source: str) -> None:
         self.source = source
@@ -51,8 +50,9 @@ class MaestroInvalidTracks(beam.DoFn):
         self.maestro_remote = mirdata.initialize("maestro", data_home=self.source)
         self.filesystem = beam.io.filesystems.FileSystems()
 
-    def process(self, element: Tuple[str, str], *args: Tuple[Any, Any], **kwargs: Dict[str, Any]) -> Any:
+    def process(self, element: tuple[str, str], *args: tuple[Any, Any], **kwargs: dict[str, Any]) -> Any:
         import tempfile
+
         import sox
 
         track_id, split = element
@@ -79,7 +79,7 @@ class MaestroInvalidTracks(beam.DoFn):
 
 
 class MaestroToTfExample(beam.DoFn):
-    DOWNLOAD_ATTRIBUTES = ["audio_path", "midi_path"]
+    DOWNLOAD_ATTRIBUTES: ClassVar[list[str]] = ["audio_path", "midi_path"]
 
     def __init__(self, source: str, download: bool):
         self.source = source
@@ -96,20 +96,20 @@ class MaestroToTfExample(beam.DoFn):
         if self.download:
             self.maestro_remote.download()
 
-    def process(self, element: List[str], *args: Tuple[Any, Any], **kwargs: Dict[str, Any]) -> List[Any]:
+    def process(self, element: list[str], *args: tuple[Any, Any], **kwargs: dict[str, Any]) -> list[Any]:
         import tempfile
 
         import numpy as np
         import sox
 
         from basic_pitch.constants import (
+            ANNOTATION_HOP,
             AUDIO_N_CHANNELS,
             AUDIO_SAMPLE_RATE,
             FREQ_BINS_CONTOURS,
             FREQ_BINS_NOTES,
-            ANNOTATION_HOP,
-            N_FREQ_BINS_NOTES,
             N_FREQ_BINS_CONTOURS,
+            N_FREQ_BINS_NOTES,
         )
         from basic_pitch.data import tf_example_serialization
 
@@ -168,7 +168,7 @@ class MaestroToTfExample(beam.DoFn):
         return [batch]
 
 
-def create_input_data(source: str) -> List[Tuple[str, str]]:
+def create_input_data(source: str) -> list[tuple[str, str]]:
     import apache_beam as beam
 
     filesystem = beam.io.filesystems.FileSystems()
@@ -176,15 +176,18 @@ def create_input_data(source: str) -> List[Tuple[str, str]]:
     with tempfile.TemporaryDirectory() as tmpdir:
         maestro = mirdata.initialize("maestro", data_home=tmpdir)
         metadata_path = maestro._index["metadata"]["maestro-v2.0.0"][0]
-        with filesystem.open(
-            os.path.join(source, metadata_path),
-        ) as s, open(os.path.join(tmpdir, metadata_path), "wb") as d:
+        with (
+            filesystem.open(
+                os.path.join(source, metadata_path),
+            ) as s,
+            open(os.path.join(tmpdir, metadata_path), "wb") as d,
+        ):
             d.write(s.read())
 
         return [(track_id, track.split) for track_id, track in maestro.load_tracks().items()]
 
 
-def main(known_args: argparse.Namespace, pipeline_args: List[str]) -> None:
+def main(known_args: argparse.Namespace, pipeline_args: list[str]) -> None:
     time_created = int(time.time())
     destination = commandline.resolve_destination(known_args, time_created)
 

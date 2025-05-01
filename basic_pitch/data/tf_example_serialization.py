@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2022 Spotify AB
 #
@@ -15,27 +14,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List, Tuple, Union
 
-import sox
 import numpy as np
+import sox
 import tensorflow as tf
+
 from basic_pitch.constants import AUDIO_N_CHANNELS, AUDIO_SAMPLE_RATE
 
 
-def int64_feature(value: Union[List[int], int]) -> tf.train.Feature:
+def int64_feature(value: list[int] | int) -> tf.train.Feature:
     if not isinstance(value, list):
         value = [value]
     return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
 
 
-def float_feature(value: Union[List[float], float]) -> tf.train.Feature:
+def float_feature(value: list[float] | float) -> tf.train.Feature:
     if not isinstance(value, list):
         value = [value]
     return tf.train.Feature(float_list=tf.train.FloatList(value=value))
 
 
-def bytes_feature(value: Union[tf.Tensor, List[bytes], bytes]) -> tf.train.Feature:
+def bytes_feature(value: tf.Tensor | list[bytes] | bytes) -> tf.train.Feature:
     if isinstance(value, type(tf.constant(0))):
         value = value.numpy()
     if not isinstance(value, list):
@@ -47,14 +46,14 @@ def _to_transcription_tfex(
     file_id: str,
     source: str,
     encoded_wav: bytes,
-    notes_indices: List[Tuple[int, int]],
-    notes_values: List[float],
-    onsets_indices: List[int],
-    onsets_values: List[float],
-    contours_indices: List[int],
-    contours_values: List[float],
-    notes_onsets_shape: Tuple[int, int],
-    contours_shape: Tuple[int, int],
+    notes_indices: list[tuple[int, int]],
+    notes_values: list[float],
+    onsets_indices: list[int],
+    onsets_values: list[float],
+    contours_indices: list[int],
+    contours_values: list[float],
+    notes_onsets_shape: tuple[int, int],
+    contours_shape: tuple[int, int],
 ) -> tf.train.Example:
     return tf.train.Example(
         features=tf.train.Features(
@@ -79,14 +78,14 @@ def to_transcription_tfexample(
     file_id: str,
     source: str,
     audio_wav_file_path: str,
-    notes_indices: List[Tuple[int, int]],
-    notes_values: List[float],
-    onsets_indices: List[int],
-    onsets_values: List[float],
-    contours_indices: List[int],
-    contours_values: List[float],
-    notes_onsets_shape: Tuple[int, int],
-    contours_shape: Tuple[int, int],
+    notes_indices: list[tuple[int, int]],
+    notes_values: list[float],
+    onsets_indices: list[int],
+    onsets_values: list[float],
+    contours_indices: list[int],
+    contours_values: list[float],
+    notes_onsets_shape: tuple[int, int],
+    contours_shape: tuple[int, int],
 ) -> tf.train.Example:
     """
     - `file_id` string

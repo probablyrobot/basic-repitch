@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2024 Spotify AB
 #
@@ -16,6 +15,7 @@
 # limitations under the License.
 
 import pathlib
+
 import sox
 import tensorflow as tf
 

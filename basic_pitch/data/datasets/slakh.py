@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2024 Spotify AB
 #
@@ -19,8 +18,7 @@ import argparse
 import logging
 import os
 import time
-
-from typing import List, Tuple, Any
+from typing import Any, ClassVar
 
 import apache_beam as beam
 import mirdata
@@ -29,7 +27,7 @@ from basic_pitch.data import commandline, pipeline
 
 
 class SlakhFilterInvalidTracks(beam.DoFn):
-    DOWNLOAD_ATTRIBUTES = ["audio_path", "metadata_path", "midi_path"]
+    DOWNLOAD_ATTRIBUTES: ClassVar[list[str]] = ["audio_path", "metadata_path", "midi_path"]
 
     def __init__(self, source: str):
         self.source = source
@@ -40,7 +38,7 @@ class SlakhFilterInvalidTracks(beam.DoFn):
         self.slakh_remote = mirdata.initialize("slakh", data_home=self.source)
         self.filesystem = beam.io.filesystems.FileSystems()
 
-    def process(self, element: Tuple[str, str]) -> Any:
+    def process(self, element: tuple[str, str]) -> Any:
         import tempfile
 
         import apache_beam as beam
@@ -76,7 +74,7 @@ class SlakhFilterInvalidTracks(beam.DoFn):
             if track_local.is_drum:
                 return None
 
-            local_wav_path = "{}_tmp.wav".format(track_local.audio_path)
+            local_wav_path = f"{track_local.audio_path}_tmp.wav"
             try:
                 ffmpeg.input(track_local.audio_path).output(
                     local_wav_path, ar=AUDIO_SAMPLE_RATE, ac=AUDIO_N_CHANNELS
@@ -93,7 +91,7 @@ class SlakhFilterInvalidTracks(beam.DoFn):
 
 
 class SlakhToTfExample(beam.DoFn):
-    DOWNLOAD_ATTRIBUTES = ["audio_path", "metadata_path", "midi_path"]
+    DOWNLOAD_ATTRIBUTES: ClassVar[list[str]] = ["audio_path", "metadata_path", "midi_path"]
 
     def __init__(self, source: str, download: bool) -> None:
         self.source = source
@@ -108,20 +106,20 @@ class SlakhToTfExample(beam.DoFn):
         if self.download:
             self.slakh_remote.download()
 
-    def process(self, element: List[str]) -> List[Any]:
+    def process(self, element: list[str]) -> list[Any]:
         import tempfile
 
-        import numpy as np
         import ffmpeg
+        import numpy as np
 
         from basic_pitch.constants import (
+            ANNOTATION_HOP,
             AUDIO_N_CHANNELS,
             AUDIO_SAMPLE_RATE,
             FREQ_BINS_CONTOURS,
             FREQ_BINS_NOTES,
-            ANNOTATION_HOP,
-            N_FREQ_BINS_NOTES,
             N_FREQ_BINS_CONTOURS,
+            N_FREQ_BINS_NOTES,
         )
         from basic_pitch.data import tf_example_serialization
 
@@ -143,7 +141,7 @@ class SlakhToTfExample(beam.DoFn):
                     with self.filesystem.open(source) as s, open(dest, "wb") as d:
                         d.write(s.read())
 
-                local_wav_path = "{}_tmp.wav".format(track_local.audio_path)
+                local_wav_path = f"{track_local.audio_path}_tmp.wav"
                 ffmpeg.input(track_local.audio_path).output(
                     local_wav_path, ar=AUDIO_SAMPLE_RATE, ac=AUDIO_N_CHANNELS
                 ).run()
@@ -180,12 +178,12 @@ class SlakhToTfExample(beam.DoFn):
         return [batch]
 
 
-def create_input_data() -> List[Tuple[str, str]]:
+def create_input_data() -> list[tuple[str, str]]:
     slakh = mirdata.initialize("slakh")
     return [(track_id, track.data_split) for track_id, track in slakh.load_tracks().items()]
 
 
-def main(known_args: argparse.Namespace, pipeline_args: List[str]) -> None:
+def main(known_args: argparse.Namespace, pipeline_args: list[str]) -> None:
     time_created = int(time.time())
     destination = commandline.resolve_destination(known_args, time_created)
     input_data = create_input_data()

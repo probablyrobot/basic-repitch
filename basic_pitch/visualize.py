@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2022 Spotify AB
 #
@@ -15,23 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+import librosa
+import mir_eval
 import numpy as np
 import tensorflow as tf
-import mir_eval
-import librosa
 
-from typing import Dict
-
+from basic_pitch import models
 from basic_pitch.constants import (
-    AUDIO_SAMPLE_RATE,
+    ANNOT_N_FRAMES,
+    ANNOTATIONS_BASE_FREQUENCY,
     ANNOTATIONS_FPS,
     ANNOTATIONS_N_SEMITONES,
-    ANNOTATIONS_BASE_FREQUENCY,
-    ANNOT_N_FRAMES,
-    NOTES_BINS_PER_SEMITONE,
     AUDIO_N_SAMPLES,
+    AUDIO_SAMPLE_RATE,
+    NOTES_BINS_PER_SEMITONE,
 )
-from basic_pitch import models
 
 SONIFY_FS = 3000
 MAX_OUTPUTS = 4
@@ -67,8 +65,8 @@ def visualize_transcription(
     file_writer: tf.summary.SummaryWriter,
     stage: str,
     inputs: tf.Tensor,
-    targets: Dict[str, tf.Tensor],
-    outputs: Dict[str, tf.Tensor],
+    targets: dict[str, tf.Tensor],
+    outputs: dict[str, tf.Tensor],
     loss: float,
     step: int,
     sonify: bool = True,

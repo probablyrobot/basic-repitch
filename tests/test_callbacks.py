@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2024 Spotify AB
 #
@@ -15,20 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 import numpy as np
 import tensorflow as tf
 
-from typing import Dict
-
 from basic_pitch.callbacks import VisualizeCallback
-from basic_pitch.constants import AUDIO_N_SAMPLES, ANNOTATIONS_N_SEMITONES, ANNOT_N_FRAMES
+from basic_pitch.constants import ANNOT_N_FRAMES, ANNOTATIONS_N_SEMITONES, AUDIO_N_SAMPLES
 
 
 class MockModel(tf.keras.Model):
     def __init__(self) -> None:
-        super(MockModel, self).__init__()
+        super().__init__()
 
-    def call(self, inputs: tf.Tensor) -> Dict[str, tf.Tensor]:
+    def call(self, inputs: tf.Tensor) -> dict[str, tf.Tensor]:
         return {
             key: tf.random.normal((1, ANNOTATIONS_N_SEMITONES, ANNOT_N_FRAMES)) for key in ["onset", "contour", "note"]
         }
@@ -59,3 +57,8 @@ def test_visualize_callback_on_epoch_end(tmpdir: str) -> None:
     vc.model = MockModel()
 
     vc.on_epoch_end(1, {"loss": np.random.random(), "val_loss": np.random.random()})
+
+
+class TestCallback(tf.keras.callbacks.Callback):
+    def __init__(self, *args, **kwargs):
+        super().__init__()

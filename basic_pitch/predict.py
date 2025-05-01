@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2022 Spotify AB
 #
@@ -26,7 +25,6 @@ from basic_pitch import (
     build_icassp_2022_model_path,
 )
 from basic_pitch.inference import Model
-
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
@@ -148,8 +146,8 @@ def main() -> None:
     print("Importing the ML infrence library (this may take a few seconds)...")
     from basic_pitch.inference import (
         predict_and_save,
-        verify_output_dir,
         verify_input_path,
+        verify_output_dir,
     )
 
     output_dir = pathlib.Path(args.output_dir)
@@ -185,7 +183,7 @@ def main() -> None:
             args.midi_tempo,
         )
         print("\n✨ Done ✨\n")
-    except IOError as ioe:
+    except OSError as ioe:
         print(ioe)
     except Exception as e:
         print("🚨 Something went wrong 😔 - see the traceback below for details.")

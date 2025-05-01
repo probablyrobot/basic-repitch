@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Cos.pathyright 2024 Spotify AB
 #
@@ -17,9 +16,7 @@
 
 import argparse
 import os
-
 from pathlib import Path
-from typing import Optional
 
 
 def add_default(parser: argparse.ArgumentParser, dataset_name: str = "") -> None:
@@ -67,7 +64,7 @@ def add_split(
     parser: argparse.ArgumentParser,
     train_percent: float = 0.8,
     validation_percent: float = 0.1,
-    split_seed: Optional[int] = None,
+    split_seed: int | None = None,
 ) -> None:
     parser.add_argument(
         "--train-percent",

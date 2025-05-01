@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2022 Spotify AB
 #
@@ -19,18 +18,17 @@ import faulthandler
 import os
 import pathlib
 import tempfile
-from typing import Dict, List
 
 import librosa
-import pretty_midi
 import numpy as np
 import numpy.typing as npt
+import pretty_midi
 
 from basic_pitch import ICASSP_2022_MODEL_PATH, inference
 from basic_pitch.constants import (
-    AUDIO_SAMPLE_RATE,
-    AUDIO_N_SAMPLES,
     ANNOTATIONS_N_SEMITONES,
+    AUDIO_N_SAMPLES,
+    AUDIO_SAMPLE_RATE,
     FFT_HOP,
 )
 
@@ -45,7 +43,7 @@ def test_predict() -> None:
         test_audio_path,
         inference.Model(ICASSP_2022_MODEL_PATH),
     )
-    assert set(model_output.keys()) == set(["note", "onset", "contour"])
+    assert set(model_output.keys()) == {"note", "onset", "contour"}
     assert model_output["note"].shape == model_output["onset"].shape
     assert isinstance(midi_data, pretty_midi.PrettyMIDI)
     lowest_supported_midi = 21
@@ -63,7 +61,7 @@ def test_predict() -> None:
 
     expected_note_events = np.load(RESOURCES_PATH / "vocadito_10" / "note_events.npz", allow_pickle=True)["arr_0"]
     assert len(expected_note_events) == len(note_events)
-    for expected, calculated in zip(expected_note_events, note_events):
+    for expected, calculated in zip(expected_note_events, note_events, strict=False):
         for i in range(len(expected)):
             np.testing.assert_allclose(expected[i], calculated[i], atol=1e-4, rtol=0)
 
@@ -156,7 +154,9 @@ def test_predict_max_freq() -> None:
 def test_window_audio_file() -> None:
     test_audio_path = RESOURCES_PATH / "vocadito_10.wav"
     audio, _ = librosa.load(str(test_audio_path), sr=AUDIO_SAMPLE_RATE, mono=True)
-    audio_windowed, window_times = zip(*inference.window_audio_file(audio, AUDIO_N_SAMPLES - 30 * FFT_HOP))
+    audio_windowed, window_times = zip(
+        *inference.window_audio_file(audio, AUDIO_N_SAMPLES - 30 * FFT_HOP), strict=False
+    )
     assert len(audio_windowed) == 6
     assert len(window_times) == 6
     for time in window_times:
@@ -169,11 +169,10 @@ def test_get_audio_input() -> None:
     audio, _ = librosa.load(str(test_audio_path), sr=AUDIO_SAMPLE_RATE, mono=True)
     overlap_len = 30 * FFT_HOP
     audio = np.concatenate([np.zeros((overlap_len // 2,), dtype=np.float32), audio])
-    audio_windowed: List[npt.NDArray[np.float32]] = []
-    window_times: List[Dict[str, float]] = []
-    for audio_window, window_time, original_length in inference.get_audio_input(
-        test_audio_path, overlap_len, AUDIO_N_SAMPLES - overlap_len
-    ):
+    audio_windowed: list[npt.NDArray[np.float32]] = []
+    window_times: list[dict[str, float]] = []
+    audio_chunks = list(inference.get_audio_input(test_audio_path, overlap_len, AUDIO_N_SAMPLES - overlap_len))
+    for audio_window, window_time, _ in audio_chunks:
         audio_windowed.append(audio_window)
         window_times.append(window_time)
     audio_windowed = np.array(audio_windowed)
@@ -183,4 +182,21 @@ def test_get_audio_input() -> None:
         assert time["start"] <= time["end"]
     np.testing.assert_equal(audio[:AUDIO_N_SAMPLES], np.squeeze(audio_windowed[0]))
 
-    assert original_length == 200607
+    assert audio_chunks[-1][2] == 200607
+
+
+def test_inference():
+    try:
+        model = inference.Model("path/to/model")
+        assert model.model_type in {"tensorflow", "tflite", "onnx", "coreml"}
+    except Exception as e:
+        raise AssertionError(f"Failed to create Model: {e}")
+
+
+def test_process_audio_chunk():
+    audio_chunk = np.random.random(1000)
+    model = inference.Model("path/to/model")
+    chunk_length = len(audio_chunk)
+    result = inference._process_audio_chunk(audio_chunk, model, model.model_type, chunk_length)
+    assert isinstance(result, dict)
+    assert result["note"].shape[0] == chunk_length

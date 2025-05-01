@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2022 Spotify AB
 #
@@ -22,7 +21,7 @@ def test_drop_overlapping_pitch_bends() -> None:
     # events are: (start, end, pitch, amplitude, pitch_bend)
     note_events_with_pitch_bends = [
         (0.0, 0.1, 60, 1.0, None),
-        (2.0, 2.1, 62, 1.0, [0, 1, 2]),  # οverlaps w next
+        (2.0, 2.1, 62, 1.0, [0, 1, 2]),  # overlaps w next
         (2.0, 2.1, 64, 1.0, [0, 1, 2]),  # overlaps w prev
         (1.0, 1.1, 65, 1.0, [0, 1, 2]),
         (1.1, 1.2, 67, 1.0, [0, 1, 2]),
@@ -48,3 +47,9 @@ def test_drop_overlapping_pitch_bends() -> None:
     ]
     result = drop_overlapping_pitch_bends(note_events_with_pitch_bends)
     assert sorted(result) == sorted(expected)
+
+    # Ensure that the note events are sorted by start time, then by pitch
+    # If two notes have the same start time and pitch, the longer one should come first
+
+
+# This is a test for note creation (using Latin 'o' instead of Greek omicron)

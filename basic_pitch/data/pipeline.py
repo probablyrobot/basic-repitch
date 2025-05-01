@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2024 Spotify AB
 #
@@ -18,7 +17,8 @@
 import logging
 import os
 import uuid
-from typing import Any, Dict, List, Tuple, Callable, Union
+from collections.abc import Callable
+from typing import Any
 
 import apache_beam as beam
 import tensorflow as tf
@@ -30,7 +30,7 @@ class Batch(beam.DoFn):
     def __init__(self, batch_size: int) -> None:
         self.batch_size = batch_size
 
-    def process(self, element: List[Any], *args: Tuple[Any, Any], **kwargs: Dict[str, Any]) -> Any:
+    def process(self, element: list[Any], *args: tuple[Any, Any], **kwargs: dict[str, Any]) -> Any:
         for i in range(0, len(element), self.batch_size):
             yield element[i : i + self.batch_size]
 
@@ -39,7 +39,7 @@ class WriteBatchToTfRecord(beam.DoFn):
     def __init__(self, destination: str) -> None:
         self.destination = destination
 
-    def process(self, element: Any, *args: Tuple[Any, Any], **kwargs: Dict[str, Any]) -> None:
+    def process(self, element: Any, *args: tuple[Any, Any], **kwargs: dict[str, Any]) -> None:
         if not isinstance(element, list):
             element = [element]
 
@@ -52,8 +52,8 @@ class WriteBatchToTfRecord(beam.DoFn):
 
 def transcription_dataset_writer(
     p: beam.Pipeline,
-    input_data: List[Tuple[str, str]],
-    to_tf_example: Union[beam.DoFn, Callable[[List[Any]], Any]],
+    input_data: list[tuple[str, str]],
+    to_tf_example: beam.DoFn | Callable[[list[Any]], Any],
     filter_invalid_tracks: beam.PTransform,
     destination: str,
     batch_size: int,
@@ -85,9 +85,9 @@ def transcription_dataset_writer(
 
 
 def run(
-    pipeline_options: Dict[str, str],
-    pipeline_args: List[str],
-    input_data: List[Tuple[str, str]],
+    pipeline_options: dict[str, str],
+    pipeline_args: list[str],
+    input_data: list[tuple[str, str]],
     to_tf_example: beam.DoFn,
     filter_invalid_tracks: beam.DoFn,
     destination: str,

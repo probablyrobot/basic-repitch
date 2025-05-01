@@ -75,7 +75,7 @@ This library offers a command line tool interface. A basic prediction command wi
 basic-pitch <output-directory> <input-audio-path>
 ```
 
-For example: 
+For example:
 ```
 basic-pitch /output/directory/path /input/audio/path
 ```
@@ -215,4 +215,3 @@ http://www.apache.org/licenses/LICENSE-2.0
 
 
 Unless required by applicable law or agreed to in writing, software distributed under the Apache License or the GPL License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the Apache License for the specific language governing permissions and limitations under the Apache License.
-

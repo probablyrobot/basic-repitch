@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2024 Spotify AB
 #
@@ -14,15 +13,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import apache_beam as beam
 import itertools
 import os
 import pathlib
 import shutil
 
-from typing import List, Tuple
-
+import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
+from utils import create_mock_flac, create_mock_midi
 
 from basic_pitch.data.datasets.slakh import (
     SlakhFilterInvalidTracks,
@@ -30,8 +28,6 @@ from basic_pitch.data.datasets.slakh import (
     create_input_data,
 )
 from basic_pitch.data.pipeline import WriteBatchToTfRecord
-
-from utils import create_mock_flac, create_mock_midi
 
 RESOURCES_PATH = pathlib.Path(__file__).parent.parent / "resources"
 SLAKH_PATH = RESOURCES_PATH / "data" / "slakh" / "slakh2100_flac_redux"
@@ -50,7 +46,7 @@ OMITTED_DRUMS_TRACK_ID = "Track00049-S06"
 
 
 # Function to generate a sine wave
-def create_mock_input_data(data_home: pathlib.Path, input_data: List[Tuple[str, str]]) -> None:
+def create_mock_input_data(data_home: pathlib.Path, input_data: list[tuple[str, str]]) -> None:
     for track_id, split in input_data:
         track_num, inst_num = track_id.split("-")
         track_dir = data_home / split / track_num
@@ -70,7 +66,7 @@ def test_slakh_to_tf_example(tmp_path: pathlib.Path) -> None:
     mock_slakh_home = tmp_path / "slakh"
     mock_slakh_ext = mock_slakh_home / "slakh2100_flac_redux"
 
-    input_data: List[Tuple[str, str]] = [(TRAIN_PIANO_TRACK_ID, "train")]
+    input_data: list[tuple[str, str]] = [(TRAIN_PIANO_TRACK_ID, "train")]
     create_mock_input_data(mock_slakh_ext, input_data)
 
     output_dir = tmp_path / "outputs"
@@ -115,7 +111,7 @@ def test_slakh_invalid_tracks(tmp_path: pathlib.Path) -> None:
             )
 
     for track_id, split in input_data:
-        with open(tmp_path / f"output_{split}.txt", "r") as fp:
+        with open(tmp_path / f"output_{split}.txt") as fp:
             assert fp.read().strip() == track_id
 
 
@@ -141,10 +137,10 @@ def test_slakh_invalid_tracks_omitted(tmp_path: pathlib.Path) -> None:
                 >> beam.io.WriteToText(str(tmp_path / f"output_{split}.txt"), shard_name_template="")
             )
 
-    with open(tmp_path / "output_train.txt", "r") as fp:
+    with open(tmp_path / "output_train.txt") as fp:
         assert fp.read().strip() == TRAIN_PIANO_TRACK_ID
 
-    with open(tmp_path / "output_omitted.txt", "r") as fp:
+    with open(tmp_path / "output_omitted.txt") as fp:
         assert fp.read().strip() == ""
 
 
@@ -171,7 +167,7 @@ def test_slakh_invalid_tracks_drums(tmp_path: pathlib.Path) -> None:
             )
 
     for _, split in input_data:
-        with open(tmp_path / f"output_{split}.txt", "r") as fp:
+        with open(tmp_path / f"output_{split}.txt") as fp:
             assert fp.read().strip() == ""
 
 
@@ -179,3 +175,42 @@ def test_create_input_data() -> None:
     data = create_input_data()
     for _, group in itertools.groupby(data, lambda el: el[1]):
         assert len(list(group))
+
+
+class SlakhDataset:
+    """Mock Slakh dataset for testing."""
+
+    def __init__(self) -> None:
+        """Initialize the dataset."""
+        self.audio_dir = "audio"
+        self.annotation_dir = "annotation"
+        self.track_ids = [
+            TRAIN_PIANO_TRACK_ID,
+            TRAIN_DRUMS_TRACK_ID,
+            VALID_PIANO_TRACK_ID,
+            VALID_DRUMS_TRACK_ID,
+            TEST_PIANO_TRACK_ID,
+            TEST_DRUMS_TRACK_ID,
+        ]
+
+    def get_audio_path(self, track_id: str) -> str:
+        """Get audio path for a track.
+
+        Args:
+            track_id: Track ID
+
+        Returns:
+            Audio file path
+        """
+        return os.path.join(self.audio_dir, f"{track_id}.flac")
+
+    def get_annotation_path(self, track_id: str) -> str:
+        """Get annotation path for a track.
+
+        Args:
+            track_id: Track ID
+
+        Returns:
+            Annotation file path
+        """
+        return os.path.join(self.annotation_dir, f"{track_id}.midi")

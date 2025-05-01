@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2022 Spotify AB
 #
@@ -17,21 +16,19 @@
 
 import csv
 import os
-
 from itertools import islice
 
 import apache_beam as beam
 import numpy as np
 import tensorflow as tf
-
 from apache_beam.testing.test_pipeline import TestPipeline
 
-from basic_pitch.data.tf_example_serialization import bytes_feature, int64_feature
 from basic_pitch.data.pipeline import (
     Batch,
     WriteBatchToTfRecord,
     transcription_dataset_writer,
 )
+from basic_pitch.data.tf_example_serialization import bytes_feature, int64_feature
 
 
 def test_batch() -> None:

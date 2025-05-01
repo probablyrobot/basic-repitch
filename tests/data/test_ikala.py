@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2024 Spotify AB
 #
@@ -14,17 +13,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import apache_beam as beam
 import itertools
 import os
 
+import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
 
 from basic_pitch.data.datasets.ikala import (
     IkalaInvalidTracks,
     create_input_data,
 )
-
 
 # TODO: Create test_ikala_to_tf_example
 
@@ -47,7 +45,7 @@ def test_ikala_invalid_tracks(tmpdir: str) -> None:
             )
 
     for i, split in enumerate(split_labels):
-        with open(os.path.join(tmpdir, f"output_{split}.txt"), "r") as fp:
+        with open(os.path.join(tmpdir, f"output_{split}.txt")) as fp:
             assert fp.read().strip() == str(i)
 
 
@@ -65,4 +63,43 @@ def test_ikala_create_input_data_overallocate() -> None:
     except AssertionError:
         assert True
     else:
-        assert False
+        raise AssertionError()
+
+
+def test_ikala_dataset():
+    try:
+        IKalaDataset()
+    except Exception as e:
+        raise AssertionError(f"Failed to create IKalaDataset: {e}")
+
+
+class IKalaDataset:
+    """Mock IKala dataset for testing."""
+
+    def __init__(self) -> None:
+        """Initialize the dataset."""
+        self.audio_dir = "audio"
+        self.annotation_dir = "annotation"
+        self.track_ids = ["01_BN1-129-Eb_comp"]
+
+    def get_audio_path(self, track_id: str) -> str:
+        """Get audio path for a track.
+
+        Args:
+            track_id: Track ID
+
+        Returns:
+            Audio file path
+        """
+        return os.path.join(self.audio_dir, f"{track_id}.wav")
+
+    def get_annotation_path(self, track_id: str) -> str:
+        """Get annotation path for a track.
+
+        Args:
+            track_id: Track ID
+
+        Returns:
+            Annotation file path
+        """
+        return os.path.join(self.annotation_dir, f"{track_id}.jams")

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2022 Spotify AB
 #
@@ -15,7 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Callable, Dict
+from collections.abc import Callable
+from typing import Any
+
 import numpy as np
 import tensorflow as tf
 
@@ -29,7 +30,7 @@ from basic_pitch.constants import (
     FFT_HOP,
     N_FREQ_BINS_CONTOURS,
 )
-from basic_pitch.layers import signal, nnaudio
+from basic_pitch.layers import nnaudio, signal
 
 tfkl = tf.keras.layers
 
@@ -103,7 +104,7 @@ def onset_loss(
     return lambda x, y: transcription_loss(x, y, label_smoothing=label_smoothing)
 
 
-def loss(label_smoothing: float = 0.2, weighted: bool = False, positive_weight: float = 0.5) -> Dict[str, Any]:
+def loss(label_smoothing: float = 0.2, weighted: bool = False, positive_weight: float = 0.5) -> dict[str, Any]:
     """Creates a keras-compatible dictionary of loss functions to calculate
     the loss for the contour, note and onset posteriorgrams.
 
@@ -117,7 +118,10 @@ def loss(label_smoothing: float = 0.2, weighted: bool = False, positive_weight: 
         transcription losses.
 
     """
-    loss_fn = lambda x, y: transcription_loss(x, y, label_smoothing=label_smoothing)
+
+    def loss_fn(x, y):
+        return transcription_loss(x, y, label_smoothing=label_smoothing)
+
     loss_onset = onset_loss(weighted, label_smoothing, positive_weight)
     return {
         "contour": loss_fn,
@@ -170,6 +174,10 @@ def get_cqt(inputs: tf.Tensor, n_harmonics: int, use_batchnorm: bool) -> tf.Tens
     return x
 
 
+def _get_harmonic_frequencies(n_harmonics: int) -> list[float]:
+    return [0.5, *list(range(1, n_harmonics))]
+
+
 def model(
     n_harmonics: int = 8,
     n_filters_contour: int = 32,
@@ -193,7 +201,7 @@ def model(
     if n_harmonics > 1:
         x = nn.HarmonicStacking(
             CONTOURS_BINS_PER_SEMITONE,
-            [0.5] + list(range(1, n_harmonics)),
+            _get_harmonic_frequencies(n_harmonics),
             N_FREQ_BINS_CONTOURS,
         )(x)
     else:

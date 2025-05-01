@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# encoding: utf-8
 #
 # Copyright 2022 Spotify AB
 #
@@ -15,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterator, Tuple
 import unittest
+from collections.abc import Iterator
 
 import numpy as np
 import tensorflow as tf
@@ -35,7 +34,7 @@ tfkl = tf.keras.layers
 
 
 class TestHarmonicStacking(unittest.TestCase):
-    def _audio_data_gen(self) -> Iterator[Tuple[np.array, np.array]]:
+    def _audio_data_gen(self) -> Iterator[tuple[np.array, np.array]]:
         while True:
             audio = np.random.uniform(size=(BATCH_SIZE, AUDIO_N_SAMPLES, 1)).astype(np.float32)
             output = np.random.uniform(size=(BATCH_SIZE, ANNOT_N_FRAMES, ANNOTATIONS_N_SEMITONES * 3, 1)).astype(
