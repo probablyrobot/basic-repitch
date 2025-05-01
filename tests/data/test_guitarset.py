@@ -20,7 +20,6 @@ import shutil
 
 import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
-from utils import create_mock_wav
 
 from basic_pitch.data.datasets.guitarset import (
     GuitarSetInvalidTracks,
@@ -28,6 +27,7 @@ from basic_pitch.data.datasets.guitarset import (
     create_input_data,
 )
 from basic_pitch.data.pipeline import WriteBatchToTfRecord
+from tests.data.utils import create_mock_wav
 
 RESOURCES_PATH = pathlib.Path(__file__).parent.parent / "resources"
 TRACK_ID = "00_BN1-129-Eb_comp"
