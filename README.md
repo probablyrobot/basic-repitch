@@ -1,4 +1,4 @@
-![Basic Pitch Logo](https://user-images.githubusercontent.com/213293/167478083-de988de2-9137-4325-8a5f-ceeb51233753.png)
+![Basic RePitch Logo](https://github.com/user-attachments/assets/8674c6b9-f398-46bb-a7b7-663b64478eb2)
 
 
 
