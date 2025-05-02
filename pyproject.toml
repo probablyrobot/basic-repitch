@@ -30,7 +30,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
+python = ">=3.10,<3.13"
 librosa = "^0.10.1"
 mir_eval = "^0.7"
 numpy = "^1.26.4"
